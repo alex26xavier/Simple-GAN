@@ -5,9 +5,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision
-import torchvision.dataset as dataset
+from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
-import torchvision.transforms as transforms
 from torch.utils.tensorboard import SummaryWriter
 
 class Discriminator(nn.Module):
@@ -28,7 +27,7 @@ class Generator(nn.Module):
                 super().__init__()
                 self.gen = nn.Sequential(
                         nn.Linear(z_dim, 256),
-                        nn.LeakyRelu(0.1),
+                        nn.LeakyReLU(0.1),
                         nn.Linear(256, img_dim),
                         nn.Tanh(),
                 )
@@ -49,7 +48,7 @@ fixed_noise = torch.randn((batch_size, z_dim)).to(device)
 transforms = transforms.Compose(
         [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
 )
-dataset = dataset.MNIST(root="dataset/", transforms=transforms, download=True)
+dataset = datasets.MNIST(root="dataset/", transform=transforms, download=True)
 loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 opt_disc = optim.Adam(disc.parameters(), lr=lr)
 opt_gen = optim.Adam(gen.parameters(), lr=lr)
@@ -72,7 +71,7 @@ for epoch in range(num_epochs):
                 lossD_fake = criterion(disc_fake, torch.zeros_like(disc_fake))
                 lossD = (lossD_real + lossD_fake)/2
                 disc.zero_grad()
-                lossD.backward()(retain_graph=True)
+                lossD.backward(retain_graph=True)
                 opt_disc.step()
 
                 #Train Generator min log(1 - D(G(z))) <--> max log(DG(z))
@@ -84,13 +83,13 @@ for epoch in range(num_epochs):
 
                 if batch_idx == 0:
                         print(
-                                f"Epoch [{epoch}/{num_epoch}] \ "
+                                f"Epoch [{epoch}/{num_epochs}] \ "
                                 f"Loss D: {lossD:.4f}, Loss G: {lossG:.4f}"
                         )
 
                         with torch.no_grad():
-                                fake = gen(fixed_noise).reshape(-1, -1, 28, 28)
-                                data = real.reshape(-1, -1, 28, 28)
+                                fake = gen(fixed_noise).reshape(-1, 1, 28, 28)
+                                data = real.reshape(-1, 1, 28, 28)
                                 img_grid_fake = torchvision.utils.make_grid(fake, normalize=True)
                                 img_grid_real = torchvision.utils.make_grid(data, normalize=True)
 
